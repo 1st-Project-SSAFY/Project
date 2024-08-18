@@ -1,0 +1,22 @@
+services:  # 서비스 정의 시작
+  django:  # 'web' 서비스 정의 시작
+    image: django-image:1.0.0   # 현재 디렉토리에서 Dockerfile을 사용하여 이미지를 빌드
+    command: python manage.py runserver 0.0.0.0:8000  # 컨테이너 시작 시 실행할 명령어
+    volumes:
+      - /home/ubuntu/BE/FireRoad-Robot:/BE  # EC2 디렉토리를 컨테이너 디렉토리에 마운트 (EC2 디렉토리:컨테이너 디렉토리)
+    ports:
+      - "8000:8000"  # 호스트의 8000 포트를 컨테이너의 8000 포트에 바인딩
+    environment:
+      - DJANGO_SETTINGS_MODULE=Fireroad_Robot.settings  # 환경 변수 설정
+      - DATABASE_NAME=fireroad_robot
+      - DATABASE_USER=A204
+      - DATABASE_PASSWORD=ssafy204@!
+      - DATABASE_HOST=172.18.0.2  # MySQL 서비스 이름
+      - DATABASE_PORT=3306
+    networks:
+      - fireroad-robot_default
+
+
+networks:
+  fireroad-robot_default:
+    external: true

@@ -1,15 +1,13 @@
 import json
 
 # 맵의 크기
-width = 51
-height = 40
-
+rows, cols = 20, 26
 # 맵을 초기화 (모든 값을 0으로 설정)
-grid = [[0 for _ in range(width)] for _ in range(height)]
+grid = [[0] * cols for _ in range(rows)]
 
 # 시작점과 목표점 초기화
-start = (3, 0)
-goal = (39, 31)
+start = (1, 1)
+goal = (25, 17)
 
 # 장애물 설정 함수
 def set_obstacles():
@@ -18,40 +16,39 @@ def set_obstacles():
     
     장애물은 그리드 내에서 특정 범위에 해당하는 좌표를 1로 설정하여 표시됨.
     """
-    # 첫 번째 지정된 영역을 1로 채우기
-    for row in range(3):  # 0행부터 2행까지
-        for col in range(36):  # 0열부터 35열까지
+    # 0행의 0열부터 17열까지의 값을 1로 설정
+    for col in range(18):
+        grid[0][col] = 1
+
+    # 0행부터 8행까지의 22열부터 25열까지의 값을 1로 설정
+    for row in range(9):  # 0행부터 8행까지
+        for col in range(22, 26):  # 22열부터 25열까지
             grid[row][col] = 1
 
-    # 두 번째 지정된 영역을 1로 채우기
-    for row in range(17):  # 0행부터 16행까지
-        for col in range(43, 51):  # 43열부터 50열까지
+    # 3행부터 6행까지의 1열부터 4열까지의 값을 1로 설정
+    for row in range(3, 7):  # 3행부터 6행까지
+        for col in range(1, 5):  # 1열부터 4열까지
             grid[row][col] = 1
 
-    # 세 번째 지정된 영역을 1로 채우기
-    for row in range(17, 32):  # 17행부터 31행까지
-        for col in range(48, 51):  # 48열부터 50열까지
+    # 8행부터 11행까지의 1열부터 4열까지의 값을 1로 설정
+    for row in range(8, 12):  # 8행부터 11행까지
+        for col in range(1, 5):  # 1열부터 4열까지
             grid[row][col] = 1
 
-    # 추가된 영역을 1로 채우기
-    for row in range(7, 15):  # 7행부터 14행까지
-        for col in range(2, 9):  # 2열부터 8열까지
+    # 12행부터 19행까지의 0열부터 15열까지의 값을 1로 설정
+    for row in range(12, 20):  # 12행부터 19행까지
+        for col in range(16):  # 0열부터 15열까지
             grid[row][col] = 1
 
-    # 새로 추가된 영역을 1로 채우기
-    for row in range(17, 25):  # 17행부터 24행까지
-        for col in range(2, 9):  # 2열부터 8열까지
+    # 6열부터 16열까지의 3행부터 9행까지의 값을 1로 설정
+    for row in range(3, 10):  # 3행부터 9행까지
+        for col in range(6, 17):  # 6열부터 16열까지
             grid[row][col] = 1
 
-    # 최종 요구 사항에 따라 추가된 영역을 1로 채우기
-    for row in range(25, 40):  # 25행부터 39행까지
-        for col in range(30):  # 0열부터 29열까지
-            grid[row][col] = 1
+    # 9행부터 16행까지의 25열을 1로 설정
+    for row in range(9, 17):  # 9행부터 16행까지
+        grid[row][25] = 1
 
-    # 추가된 영역을 1로 채우기 (최종 요구 사항)
-    for row in range(7, 21):  # 7행부터 20행까지
-        for col in range(13, 36):  # 13열부터 35열까지
-            grid[row][col] = 1
 
 # JSON 파일로 저장하는 함수
 def save_grid_to_json(file_path):
@@ -71,7 +68,7 @@ def initialize_grid():
     장애물을 설정하고 설정된 그리드를 JSON 파일로 저장함.
     """
     global grid  # 전역 변수 grid를 사용
-    grid = [[0 for _ in range(width)] for _ in range(height)]  # 45x45 크기의 0으로 초기화된 2차원 배열 생성
+    grid = [[0 for _ in range(rows)] for _ in range(cols)]  # 45x45 크기의 0으로 초기화된 2차원 배열 생성
     set_obstacles()  # 장애물 설정
 
 def print_grid(grid):

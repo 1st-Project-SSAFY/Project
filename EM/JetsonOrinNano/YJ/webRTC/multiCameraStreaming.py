@@ -1,0 +1,97 @@
+# 필요한 패키지 import
+import cv2 # OpenCV(실시간 이미지 프로세싱) 모듈
+import socket # 소켓 프로그래밍에 필요한 API를 제공하는 모듈
+import pickle # 객체의 직렬화 및 역직렬화 지원 모듈
+import struct # 바이트(bytes) 형식의 데이터 처리 모듈
+import torch
+import numpy as np
+import boto3
+import cam_find
+
+model = torch.hub.load('../yolov5', 'custom', path='../test/final_model.pt' , source='local', force_reload=True)
+
+# 서버 ip 주소 및 port 번호
+ip = "70.12.108.93"
+# ip = "172.17.0.1"
+# ip = "192.168.137.137"
+port = 50001
+
+# 카메라 또는 동영상
+# 카메라 번호 자동으로 받아오기
+c1, c2 = cam_find()
+cam1 = cv2.VideoCapture(c1)
+cam2 = cv2.VideoCapture(c2)
+
+# 프레임 크기 지정
+# cam1.set(cv2.CAP_PROP_FRAME_WIDTH, 640) # 가로
+# cam1.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) # 세로
+# cam2.set(cv2.CAP_PROP_FRAME_WIDTH, 640) # 가로
+# cam2.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) # 세로
+print(cam1.isOpened())
+print(cam2.isOpened())
+
+# 소켓 객체 생성
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+    # 서버와 연결
+    client_socket.connect((ip, port))
+
+    print("연결 성공")
+    
+    flag = 0
+    # 메시지 수신
+    while True:
+        # 프레임 읽기
+        retva1, frame1 = cam1.read()
+        retva2, frame2 = cam2.read()
+            
+        frame1 = cv2.resize(frame1, (640, 480), cv2.INTER_LINEAR)
+        frame2 = cv2.resize(frame2, (640, 480), cv2.INTER_LINEAR)
+        results1 = model(frame1)
+        results2 = model(frame2)
+
+        # 결과를 프레임에 그리기
+
+        for detection in results1.xyxy[0]:
+            x1, y1, x2, y2, conf, cls = detection
+            label = results1.names[int(cls)]
+            cv2.rectangle(frame1, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 3)
+            cv2.putText(frame1, f'{label} {conf:.2f}', (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 3)
+            
+        for detection in results2.xyxy[0]:
+            x1, y1, x2, y2, conf, cls = detection
+            label = results2.names[int(cls)]
+            cv2.rectangle(frame2, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 3)
+            cv2.putText(frame2, f'{label} {conf:.2f}', (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 3)
+        
+        frame = cv2.hconcat([frame1, frame2])
+        # imencode : 이미지(프레임) 인코딩
+        # 1) 출력 파일 확장자
+        # 2) 인코딩할 이미지
+        # 3) 인코드 파라미터
+        #   - jpg의 경우 cv2.IMWRITE_JPEG_QUALITY를 이용하여 이미지의 품질(0 ~ 100)을 설정
+        #   - png의 경우 cv2.IMWRITE_PNG_COMPRESSION을 이용하여 이미지의 압축률(0 ~ 9)을 설정
+        # [return]
+        # 1) 인코딩 결과(True / False)
+        # 2) 인코딩된 이미지
+        # retval1, frame1 = cv2.imencode('.jpg', frame1, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        # retval2, frame2 = cv2.imencode('.jpg', frame2, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        retval, frame = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+
+        # dumps : 데이터를 직렬화
+        # - 직렬화(serialization) : 효율적으로 저장하거나 스트림으로 전송할 때 데이터를 줄로 세워 저장하는 것
+        frame = pickle.dumps(frame)
+
+        print("전송 프레임 크기 : {} bytes".format(len(frame)))
+
+        # sendall : 데이터(프레임) 전송
+        # - 요청한 데이터의 모든 버퍼 내용을 전송
+        # - 내부적으로 모두 전송할 때까지 send 호출
+        # struct.pack : 바이트 객체로 반환
+        # - > : 빅 엔디안(big endian)
+        #   - 엔디안(endian) : 컴퓨터의 메모리와 같은 1차원의 공간에 여러 개의 연속된 대상을 배열하는 방법
+        #   - 빅 엔디안(big endian) : 최상위 바이트부터 차례대로 저장
+        # - L : 부호없는 긴 정수(unsigned long) 4 bytes
+        client_socket.sendall(struct.pack(">L", len(frame)) + frame)
+
+# 메모리를 해제
+capture.release()
